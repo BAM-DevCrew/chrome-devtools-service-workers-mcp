@@ -16,6 +16,11 @@ import {
 } from './DevtoolsUtils.js';
 import type {ListenerMap} from './PageCollector.js';
 import {NetworkCollector, ConsoleCollector} from './PageCollector.js';
+import type {
+  ServiceWorkerContext,
+  ServiceWorkerLogEntry,
+} from './ServiceWorkerCollector.js';
+import {ServiceWorkerCollector} from './ServiceWorkerCollector.js';
 import {Locator} from './third_party/index.js';
 import type {DevTools} from './third_party/index.js';
 import type {
@@ -115,6 +120,7 @@ export class McpContext implements Context {
   #textSnapshot: TextSnapshot | null = null;
   #networkCollector: NetworkCollector;
   #consoleCollector: ConsoleCollector;
+  #serviceWorkerCollector: ServiceWorkerCollector;
   #devtoolsUniverseManager: UniverseManager;
   #extensionRegistry = new ExtensionRegistry();
 
@@ -170,6 +176,7 @@ export class McpContext implements Context {
         },
       } as ListenerMap;
     });
+    this.#serviceWorkerCollector = new ServiceWorkerCollector(this.browser);
     this.#devtoolsUniverseManager = new UniverseManager(this.browser);
   }
 
@@ -177,12 +184,14 @@ export class McpContext implements Context {
     const pages = await this.createPagesSnapshot();
     await this.#networkCollector.init(pages);
     await this.#consoleCollector.init(pages);
+    await this.#serviceWorkerCollector.init();
     await this.#devtoolsUniverseManager.init(pages);
   }
 
   dispose() {
     this.#networkCollector.dispose();
     this.#consoleCollector.dispose();
+    this.#serviceWorkerCollector.dispose();
     this.#devtoolsUniverseManager.dispose();
   }
 
@@ -800,5 +809,60 @@ export class McpContext implements Context {
 
   getExtension(id: string): InstalledExtension | undefined {
     return this.#extensionRegistry.getById(id);
+  }
+
+  // ============= Service Worker Methods =============
+
+  /**
+   * Get all service worker contexts (extension SWs and PWA SWs).
+   */
+  getServiceWorkerContexts(): ServiceWorkerContext[] {
+    return this.#serviceWorkerCollector.getContexts();
+  }
+
+  /**
+   * Get service worker contexts for a specific extension.
+   */
+  getServiceWorkerContextsByExtensionId(extensionId: string): ServiceWorkerContext[] {
+    return this.#serviceWorkerCollector.getContextsByExtensionId(extensionId);
+  }
+
+  /**
+   * Get all service worker console logs.
+   */
+  getServiceWorkerLogs(): Array<ServiceWorkerLogEntry & { context: ServiceWorkerContext }> {
+    return this.#serviceWorkerCollector.getAllLogs();
+  }
+
+  /**
+   * Get service worker console logs for a specific extension.
+   */
+  getServiceWorkerLogsByExtensionId(
+    extensionId: string
+  ): Array<ServiceWorkerLogEntry & { context: ServiceWorkerContext }> {
+    return this.#serviceWorkerCollector.getLogsByExtensionId(extensionId);
+  }
+
+  /**
+   * Get a service worker log by its stable ID.
+   */
+  getServiceWorkerLogById(
+    stableId: number
+  ): (ServiceWorkerLogEntry & { context: ServiceWorkerContext }) | undefined {
+    return this.#serviceWorkerCollector.getLogById(stableId);
+  }
+
+  /**
+   * Get the stable ID for a service worker log entry.
+   */
+  getServiceWorkerLogStableId(log: ServiceWorkerLogEntry): number {
+    return this.#serviceWorkerCollector.getIdForLog(log);
+  }
+
+  /**
+   * Clear service worker logs.
+   */
+  clearServiceWorkerLogs(targetId?: string): void {
+    this.#serviceWorkerCollector.clearLogs(targetId);
   }
 }
