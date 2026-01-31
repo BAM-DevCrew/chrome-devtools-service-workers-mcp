@@ -5,6 +5,10 @@
  */
 
 import type {TextSnapshotNode, GeolocationOptions} from '../McpContext.js';
+import type {
+  ServiceWorkerContext,
+  ServiceWorkerLogEntry,
+} from '../ServiceWorkerCollector.js';
 import {zod} from '../third_party/index.js';
 import type {
   Dialog,
@@ -149,6 +153,21 @@ export type Context = Readonly<{
   uninstallExtension(id: string): Promise<void>;
   listExtensions(): InstalledExtension[];
   getExtension(id: string): InstalledExtension | undefined;
+  getServiceWorkerContexts(): ServiceWorkerContext[];
+  getServiceWorkerContextsByExtensionId(
+    extensionId: string,
+  ): ServiceWorkerContext[];
+  getServiceWorkerLogs(): Array<
+    ServiceWorkerLogEntry & {context: ServiceWorkerContext}
+  >;
+  getServiceWorkerLogsByExtensionId(
+    extensionId: string,
+  ): Array<ServiceWorkerLogEntry & {context: ServiceWorkerContext}>;
+  getServiceWorkerLogById(
+    stableId: number,
+  ): (ServiceWorkerLogEntry & {context: ServiceWorkerContext}) | undefined;
+  getServiceWorkerLogStableId(log: ServiceWorkerLogEntry): number;
+  clearServiceWorkerLogs(targetId?: string): void;
 }>;
 
 export function defineTool<Schema extends zod.ZodRawShape>(
