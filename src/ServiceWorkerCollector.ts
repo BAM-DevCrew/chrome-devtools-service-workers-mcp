@@ -68,9 +68,11 @@ type WithSymbolId<T> = T & {
   [serviceWorkerLogIdSymbol]?: number;
 };
 
+const MAX_LOG_ENTRIES = 3000;
+
 /**
  * Collects console messages from service workers (including extension service workers).
- * 
+ *
  * This uses CDP's Target domain to discover and attach to service worker targets,
  * then enables Runtime domain to capture console messages.
  */
@@ -87,14 +89,6 @@ export class ServiceWorkerCollector {
 
   async init(): Promise<void> {
     try {
-      // Get browser-level CDP session
-      // @ts-expect-error _connection is internal
-      const connection = this.#browser._connection;
-      if (!connection) {
-        logger('ServiceWorkerCollector: No browser connection available');
-        return;
-      }
-
       // Create a browser-level CDP session
       this.#browserSession = await this.#browser.target().createCDPSession();
       
@@ -239,7 +233,7 @@ export class ServiceWorkerCollector {
     // Find the SW by registration/version ID if possible
     for (const data of this.#serviceWorkers.values()) {
       if (data.context.registrationId === errorMessage.registrationId) {
-        const logEntry: WithSymbolId<ServiceWorkerLogEntry> = {
+        this.#appendLog(data, {
           kind: 'exception',
           exception: {
             text: errorMessage.errorMessage,
@@ -248,9 +242,7 @@ export class ServiceWorkerCollector {
             url: errorMessage.sourceURL,
             timestamp: Date.now(),
           },
-        };
-        logEntry[serviceWorkerLogIdSymbol] = this.#idGenerator();
-        data.logs.push(logEntry);
+        });
         break;
       }
     }
@@ -275,12 +267,13 @@ export class ServiceWorkerCollector {
   }
 
   async #setupSession(
-    targetId: string, 
-    sessionId: string, 
+    targetId: string,
+    sessionId: string,
     targetInfo: Protocol.Target.TargetInfo
   ): Promise<void> {
     if (this.#disposed || !this.#browserSession) return;
-    
+    if (this.#serviceWorkers.has(targetId)) return;
+
     try {
       // Get the CDPSession for this target
       // @ts-expect-error _sessions is internal
@@ -291,7 +284,8 @@ export class ServiceWorkerCollector {
       }
 
       // Parse extension info from URL
-      const extensionMatch = targetInfo.url.match(/^chrome-extension:\/\/([a-z]+)\//i);
+      const extensionMatch = targetInfo.url.match(/^chrome-extension:\/\/([a-p]{32})\//);
+
       const extensionId = extensionMatch?.[1];
       
       const context: ServiceWorkerContext = {
@@ -332,9 +326,17 @@ export class ServiceWorkerCollector {
     }
   }
 
+  #appendLog(data: ServiceWorkerData, logEntry: WithSymbolId<ServiceWorkerLogEntry>): void {
+    logEntry[serviceWorkerLogIdSymbol] = this.#idGenerator();
+    data.logs.push(logEntry);
+    if (data.logs.length > MAX_LOG_ENTRIES) {
+      data.logs.splice(0, data.logs.length - MAX_LOG_ENTRIES);
+    }
+  }
+
   #onConsoleAPICalled(targetId: string, params: Protocol.Runtime.ConsoleAPICalledEvent): void {
     if (this.#disposed) return;
-    
+
     const data = this.#serviceWorkers.get(targetId);
     if (!data) return;
 
@@ -352,7 +354,7 @@ export class ServiceWorkerCollector {
       return arg.type;
     });
 
-    const logEntry: WithSymbolId<ServiceWorkerLogEntry> = {
+    this.#appendLog(data, {
       kind: 'console',
       message: {
         type: params.type,
@@ -362,19 +364,17 @@ export class ServiceWorkerCollector {
         stackTrace: params.stackTrace,
         executionContextId: params.executionContextId,
       },
-    };
-    logEntry[serviceWorkerLogIdSymbol] = this.#idGenerator();
-    data.logs.push(logEntry);
+    });
   }
 
   #onExceptionThrown(targetId: string, params: Protocol.Runtime.ExceptionThrownEvent): void {
     if (this.#disposed) return;
-    
+
     const data = this.#serviceWorkers.get(targetId);
     if (!data) return;
 
     const { exceptionDetails } = params;
-    const logEntry: WithSymbolId<ServiceWorkerLogEntry> = {
+    this.#appendLog(data, {
       kind: 'exception',
       exception: {
         text: exceptionDetails.text,
@@ -385,9 +385,7 @@ export class ServiceWorkerCollector {
         exception: exceptionDetails.exception,
         timestamp: params.timestamp,
       },
-    };
-    logEntry[serviceWorkerLogIdSymbol] = this.#idGenerator();
-    data.logs.push(logEntry);
+    });
   }
 
   /**
