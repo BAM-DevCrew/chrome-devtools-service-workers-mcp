@@ -172,8 +172,21 @@ export async function launch(options: McpLaunchOptions): Promise<Browser> {
     ...(options.chromeArgs ?? []),
     '--hide-crash-restore-bubble',
   ];
-  const ignoreDefaultArgs: LaunchOptions['ignoreDefaultArgs'] =
+  let ignoreDefaultArgs: LaunchOptions['ignoreDefaultArgs'] =
     options.ignoreDefaultChromeArgs ?? false;
+
+  // When extensions are enabled, strip --enable-automation from Puppeteer's
+  // defaults. It sets navigator.webdriver=true which causes sites to detect
+  // automation and behave differently — counterproductive for extension testing.
+  if (options.enableExtensions) {
+    const currentIgnored = Array.isArray(ignoreDefaultArgs)
+      ? ignoreDefaultArgs
+      : [];
+    if (!currentIgnored.includes('--enable-automation')) {
+      currentIgnored.push('--enable-automation');
+    }
+    ignoreDefaultArgs = currentIgnored;
+  }
 
   if (headless) {
     args.push('--screen-info={3840x2160}');
