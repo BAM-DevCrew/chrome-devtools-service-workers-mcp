@@ -24,7 +24,7 @@ export const cliOptions = {
   browserUrl: {
     type: 'string',
     description:
-      'Connect to a running, debuggable Chrome instance (e.g. `http://127.0.0.1:9222`). For more details see: https://github.com/ChromeDevTools/chrome-devtools-mcp#connecting-to-a-running-chrome-instance.',
+      'Connect to a running, debuggable Chrome instance (e.g. `http://127.0.0.1:9222`). For more details see: https://github.com/ChromeDevTools/maxerviker-devtools-mcp#connecting-to-a-running-chrome-instance.',
     alias: 'u',
     conflicts: 'wsEndpoint',
     coerce: (url: string | undefined) => {
@@ -106,7 +106,7 @@ export const cliOptions = {
   userDataDir: {
     type: 'string',
     description:
-      'Path to the user data directory for Chrome. Default is $HOME/.cache/chrome-devtools-mcp/chrome-profile$CHANNEL_SUFFIX_IF_NON_STABLE',
+      'Path to the user data directory for Chrome. Default is $HOME/.cache/maxerviker-devtools-mcp/chrome-profile$CHANNEL_SUFFIX_IF_NON_STABLE',
     conflicts: ['browserUrl', 'wsEndpoint', 'isolated'],
   },
   channel: {
@@ -176,12 +176,12 @@ export const cliOptions = {
   chromeArg: {
     type: 'array',
     describe:
-      'Additional arguments for Chrome. Only applies when Chrome is launched by chrome-devtools-mcp.',
+      'Additional arguments for Chrome. Only applies when Chrome is launched by maxerviker-devtools-mcp.',
   },
   ignoreDefaultChromeArg: {
     type: 'array',
     describe:
-      'Explicitly disable default arguments for Chrome. Only applies when Chrome is launched by chrome-devtools-mcp.',
+      'Explicitly disable default arguments for Chrome. Only applies when Chrome is launched by maxerviker-devtools-mcp.',
   },
   categoryEmulation: {
     type: 'boolean',
@@ -204,32 +204,11 @@ export const cliOptions = {
     hidden: true,
     describe: 'Set to false to exclude tools related to extensions.',
   },
-  usageStatistics: {
-    type: 'boolean',
-    default: true,
-    describe:
-      'Set to false to opt-out of usage statistics collection. Google collects usage data to improve the tool, handled under the Google Privacy Policy (https://policies.google.com/privacy). This is independent from Chrome browser metrics. Disabled if CHROME_DEVTOOLS_MCP_NO_USAGE_STATISTICS or CI env variables are set.',
-  },
-  clearcutEndpoint: {
-    type: 'string',
-    hidden: true,
-    describe: 'Endpoint for Clearcut telemetry.',
-  },
-  clearcutForceFlushIntervalMs: {
-    type: 'number',
-    hidden: true,
-    describe: 'Force flush interval in milliseconds (for testing).',
-  },
-  clearcutIncludePidHeader: {
-    type: 'boolean',
-    hidden: true,
-    describe: 'Include watchdog PID in Clearcut request headers (for testing).',
-  },
 } satisfies Record<string, YargsOptions>;
 
 export function parseArguments(version: string, argv = process.argv) {
   const yargsInstance = yargs(hideBin(argv))
-    .scriptName('npx chrome-devtools-mcp@latest')
+    .scriptName('maxerviker-devtools-mcp')
     .options(cliOptions)
     .check(args => {
       // We can't set default in the options else
@@ -292,10 +271,6 @@ export function parseArguments(version: string, argv = process.argv) {
       [
         '$0 --auto-connect --channel=canary',
         'Connect to a canary Chrome instance (Chrome 144+) running instead of launching a new instance',
-      ],
-      [
-        '$0 --no-usage-statistics',
-        'Do not send usage statistics https://github.com/ChromeDevTools/chrome-devtools-mcp#usage-statistics.',
       ],
     ]);
 

@@ -1,7 +1,7 @@
 {
-  "name": "chrome-devtools-mcp",
+  "name": "maxerviker-devtools-mcp",
   "version": "0.15.1",
-  "description": "MCP server for Chrome DevTools",
+  "description": "Browser DevTools MCP server with service worker console access — forked from chrome-devtools-mcp",
   "type": "module",
   "bin": "./build/src/index.js",
   "main": "index.js",
@@ -31,14 +31,14 @@
     "LICENSE",
     "!*.tsbuildinfo"
   ],
-  "repository": "ChromeDevTools/chrome-devtools-mcp",
-  "author": "Google LLC",
+  "repository": "BAM-DevCrew/maxerviker-devtools-mcp",
+  "author": "BAM-DevCrew",
   "license": "Apache-2.0",
   "bugs": {
-    "url": "https://github.com/ChromeDevTools/chrome-devtools-mcp/issues"
+    "url": "https://github.com/BAM-DevCrew/maxerviker-devtools-mcp/issues"
   },
-  "homepage": "https://github.com/ChromeDevTools/chrome-devtools-mcp#readme",
-  "mcpName": "io.github.ChromeDevTools/chrome-devtools-mcp",
+  "homepage": "https://github.com/BAM-DevCrew/maxerviker-devtools-mcp#readme",
+  "mcpName": "io.github.BAM-DevCrew/maxerviker-devtools-mcp",
   "devDependencies": {
     "@eslint/js": "^9.35.0",
     "@google/genai": "^1.37.0",

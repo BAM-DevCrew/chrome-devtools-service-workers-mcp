@@ -1,0 +1,34 @@
+MAXerviker DevTools MCP
+Copyright 2025 BAM-DevCrew
+
+This project is a fork of chrome-devtools-mcp, originally developed by
+Google LLC under the Apache License 2.0.
+
+Original project: https://github.com/ChromeDevTools/chrome-devtools-mcp
+Fork: https://github.com/BAM-DevCrew/maxerviker-devtools-mcp
+
+Changes from upstream
+=====================
+
+Service worker console capture (new):
+  - src/ServiceWorkerCollector.ts — new file
+  - src/tools/serviceWorker.ts — new file
+  - tests/tools/serviceWorker.test.ts — new file
+  - src/McpContext.ts — modified to integrate ServiceWorkerCollector
+  - src/tools/ToolDefinition.ts — modified with service worker methods
+  - src/tools/tools.ts — modified to register service worker tools
+
+Extension support enabled by default:
+  - src/cli.ts — categoryExtensions default changed to true
+  - src/browser.ts — strips --enable-automation when extensions enabled
+
+Telemetry removed:
+  - Google Clearcut telemetry code removed from src/main.ts
+  - CLI options for usage statistics and clearcut removed from src/cli.ts
+  - No telemetry or usage data is collected by this fork
+
+Rebranded:
+  - Project renamed from chrome-devtools-mcp to maxerviker-devtools-mcp
+  - Server identity updated throughout
+  - All new files carry BAM-DevCrew copyright
+  - Original Google LLC copyright retained on unmodified upstream files

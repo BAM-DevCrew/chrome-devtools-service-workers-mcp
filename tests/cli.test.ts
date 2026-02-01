@@ -15,14 +15,12 @@ describe('cli args parsing', () => {
     categoryEmulation: true,
     'category-performance': true,
     categoryPerformance: true,
-    'category-extensions': false,
-    categoryExtensions: false,
+    'category-extensions': true,
+    categoryExtensions: true,
     'category-network': true,
     categoryNetwork: true,
     'auto-connect': undefined,
     autoConnect: undefined,
-    'usage-statistics': true,
-    usageStatistics: true,
   };
 
   it('parses with default args', async () => {
@@ -31,7 +29,7 @@ describe('cli args parsing', () => {
       ...defaultArgs,
       _: [],
       headless: false,
-      $0: 'npx chrome-devtools-mcp@latest',
+      $0: 'maxerviker-devtools-mcp',
       channel: 'stable',
     });
   });
@@ -47,7 +45,7 @@ describe('cli args parsing', () => {
       ...defaultArgs,
       _: [],
       headless: false,
-      $0: 'npx chrome-devtools-mcp@latest',
+      $0: 'maxerviker-devtools-mcp',
       'browser-url': 'http://localhost:3000',
       browserUrl: 'http://localhost:3000',
       u: 'http://localhost:3000',
@@ -65,7 +63,7 @@ describe('cli args parsing', () => {
       ...defaultArgs,
       _: [],
       headless: false,
-      $0: 'npx chrome-devtools-mcp@latest',
+      $0: 'maxerviker-devtools-mcp',
       channel: 'stable',
       'user-data-dir': '/tmp/chrome-profile',
       userDataDir: '/tmp/chrome-profile',
@@ -83,7 +81,7 @@ describe('cli args parsing', () => {
       ...defaultArgs,
       _: [],
       headless: false,
-      $0: 'npx chrome-devtools-mcp@latest',
+      $0: 'maxerviker-devtools-mcp',
       'browser-url': undefined,
       browserUrl: undefined,
       u: undefined,
@@ -102,7 +100,7 @@ describe('cli args parsing', () => {
       ...defaultArgs,
       _: [],
       headless: false,
-      $0: 'npx chrome-devtools-mcp@latest',
+      $0: 'maxerviker-devtools-mcp',
       'executable-path': '/tmp/test 123/chrome',
       e: '/tmp/test 123/chrome',
       executablePath: '/tmp/test 123/chrome',
@@ -120,7 +118,7 @@ describe('cli args parsing', () => {
       ...defaultArgs,
       _: [],
       headless: false,
-      $0: 'npx chrome-devtools-mcp@latest',
+      $0: 'maxerviker-devtools-mcp',
       channel: 'stable',
       viewport: {
         width: 888,
@@ -140,7 +138,7 @@ describe('cli args parsing', () => {
       ...defaultArgs,
       _: [],
       headless: false,
-      $0: 'npx chrome-devtools-mcp@latest',
+      $0: 'maxerviker-devtools-mcp',
       channel: 'stable',
       'chrome-arg': ['--no-sandbox', '--disable-setuid-sandbox'],
       chromeArg: ['--no-sandbox', '--disable-setuid-sandbox'],
@@ -158,7 +156,7 @@ describe('cli args parsing', () => {
       ...defaultArgs,
       _: [],
       headless: false,
-      $0: 'npx chrome-devtools-mcp@latest',
+      $0: 'maxerviker-devtools-mcp',
       channel: 'stable',
       'ignore-default-chrome-arg': [
         '--disable-extensions',
@@ -182,7 +180,7 @@ describe('cli args parsing', () => {
       ...defaultArgs,
       _: [],
       headless: false,
-      $0: 'npx chrome-devtools-mcp@latest',
+      $0: 'maxerviker-devtools-mcp',
       'ws-endpoint': 'ws://127.0.0.1:9222/devtools/browser/abc123',
       wsEndpoint: 'ws://127.0.0.1:9222/devtools/browser/abc123',
       w: 'ws://127.0.0.1:9222/devtools/browser/abc123',
@@ -200,7 +198,7 @@ describe('cli args parsing', () => {
       ...defaultArgs,
       _: [],
       headless: false,
-      $0: 'npx chrome-devtools-mcp@latest',
+      $0: 'maxerviker-devtools-mcp',
       'ws-endpoint': 'wss://example.com:9222/devtools/browser/abc123',
       wsEndpoint: 'wss://example.com:9222/devtools/browser/abc123',
       w: 'wss://example.com:9222/devtools/browser/abc123',
@@ -232,7 +230,7 @@ describe('cli args parsing', () => {
       ...defaultArgs,
       _: [],
       headless: false,
-      $0: 'npx chrome-devtools-mcp@latest',
+      $0: 'maxerviker-devtools-mcp',
       channel: 'stable',
       'category-emulation': false,
       categoryEmulation: false,
@@ -244,32 +242,11 @@ describe('cli args parsing', () => {
       ...defaultArgs,
       _: [],
       headless: false,
-      $0: 'npx chrome-devtools-mcp@latest',
+      $0: 'maxerviker-devtools-mcp',
       channel: 'stable',
       'auto-connect': true,
       autoConnect: true,
     });
   });
 
-  it('parses usage statistics flag', async () => {
-    // Test default (should be true).
-    const defaultArgs = parseArguments('1.0.0', ['node', 'main.js']);
-    assert.strictEqual(defaultArgs.usageStatistics, true);
-
-    // Test enabling it
-    const enabledArgs = parseArguments('1.0.0', [
-      'node',
-      'main.js',
-      '--usage-statistics',
-    ]);
-    assert.strictEqual(enabledArgs.usageStatistics, true);
-
-    // Test disabling it
-    const disabledArgs = parseArguments('1.0.0', [
-      'node',
-      'main.js',
-      '--no-usage-statistics',
-    ]);
-    assert.strictEqual(disabledArgs.usageStatistics, false);
-  });
 });
