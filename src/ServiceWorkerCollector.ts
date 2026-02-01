@@ -79,6 +79,12 @@ const MAX_LOG_ENTRIES = 3000;
 export class ServiceWorkerCollector {
   #browser: Browser;
   #browserSession?: CDPSession;
+  // Raw CDP connection for accessing per-target sessions via _sessions map.
+  // CDPSession.connection() returns the parent Connection which maintains
+  // a Map<sessionId, CDPSession> of all flattened sessions.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  #connection?: any;
+  #serviceWorkerDomainEnabled = false;
   #serviceWorkers = new Map<string, ServiceWorkerData>(); // targetId -> data
   #idGenerator = createIdGenerator();
   #disposed = false;
@@ -89,12 +95,24 @@ export class ServiceWorkerCollector {
 
   async init(): Promise<void> {
     try {
-      // Create a browser-level CDP session
+      // Create a browser-level CDP session and store the raw connection.
+      // The raw connection maintains a _sessions Map<sessionId, CDPSession>
+      // which we need to retrieve per-target sessions during auto-attach.
       this.#browserSession = await this.#browser.target().createCDPSession();
-      
-      // Enable service worker tracking
-      await this.#browserSession.send('ServiceWorker.enable');
-      
+      this.#connection = this.#browserSession.connection();
+
+      // ServiceWorker.enable is not available at browser level in all Chrome
+      // configurations (e.g., pipe mode). It's non-critical — we rely on the
+      // Target domain for SW discovery. When available it provides richer
+      // metadata (registrationId, versionId, runningStatus updates).
+      try {
+        await this.#browserSession.send('ServiceWorker.enable');
+        this.#serviceWorkerDomainEnabled = true;
+        logger('ServiceWorkerCollector: ServiceWorker domain enabled');
+      } catch {
+        logger('ServiceWorkerCollector: ServiceWorker domain unavailable (expected with pipe transport)');
+      }
+
       // Enable target discovery
       await this.#browserSession.send('Target.setDiscoverTargets', {
         discover: true,
@@ -115,10 +133,13 @@ export class ServiceWorkerCollector {
       this.#browserSession.on('Target.targetDestroyed', this.#onTargetDestroyed);
       this.#browserSession.on('Target.attachedToTarget', this.#onAttachedToTarget);
       this.#browserSession.on('Target.detachedFromTarget', this.#onDetachedFromTarget);
-      
-      // Listen for service worker updates (gives us more metadata)
-      this.#browserSession.on('ServiceWorker.workerVersionUpdated', this.#onWorkerVersionUpdated);
-      this.#browserSession.on('ServiceWorker.workerErrorReported', this.#onWorkerErrorReported);
+
+      // Listen for service worker metadata updates (only available when
+      // ServiceWorker domain is enabled)
+      if (this.#serviceWorkerDomainEnabled) {
+        this.#browserSession.on('ServiceWorker.workerVersionUpdated', this.#onWorkerVersionUpdated);
+        this.#browserSession.on('ServiceWorker.workerErrorReported', this.#onWorkerErrorReported);
+      }
 
       // Discover existing targets
       const { targetInfos } = await this.#browserSession.send('Target.getTargets');
@@ -136,15 +157,18 @@ export class ServiceWorkerCollector {
 
   dispose(): void {
     this.#disposed = true;
-    
+
     if (this.#browserSession) {
       this.#browserSession.off('Target.targetCreated', this.#onTargetCreated);
       this.#browserSession.off('Target.targetDestroyed', this.#onTargetDestroyed);
       this.#browserSession.off('Target.attachedToTarget', this.#onAttachedToTarget);
       this.#browserSession.off('Target.detachedFromTarget', this.#onDetachedFromTarget);
-      this.#browserSession.off('ServiceWorker.workerVersionUpdated', this.#onWorkerVersionUpdated);
-      this.#browserSession.off('ServiceWorker.workerErrorReported', this.#onWorkerErrorReported);
-      
+
+      if (this.#serviceWorkerDomainEnabled) {
+        this.#browserSession.off('ServiceWorker.workerVersionUpdated', this.#onWorkerVersionUpdated);
+        this.#browserSession.off('ServiceWorker.workerErrorReported', this.#onWorkerErrorReported);
+      }
+
       // Detach from all service workers
       for (const [_targetId, data] of this.#serviceWorkers) {
         try {
@@ -153,9 +177,11 @@ export class ServiceWorkerCollector {
           // Ignore errors during cleanup
         }
       }
-      
+
       this.#serviceWorkers.clear();
     }
+
+    this.#connection = undefined;
   }
 
   #onTargetCreated = async (event: Protocol.Target.TargetCreatedEvent): Promise<void> => {
@@ -275,9 +301,10 @@ export class ServiceWorkerCollector {
     if (this.#serviceWorkers.has(targetId)) return;
 
     try {
-      // Get the CDPSession for this target
-      // @ts-expect-error _sessions is internal
-      const session = this.#browserSession._connection._sessions?.get(sessionId);
+      // Get the CDPSession for this target from the connection's internal
+      // sessions map. When Target.setAutoAttach uses flatten: true, Puppeteer
+      // creates a CDPSession for each attached target in this map.
+      const session = this.#connection?._sessions?.get(sessionId);
       if (!session) {
         logger('ServiceWorkerCollector: Could not get session for', sessionId);
         return;
